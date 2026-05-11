@@ -1579,9 +1579,29 @@ Respond ONLY in this exact JSON format with no other text:
 }`;
 
   try {
+    const apiKey = localStorage.getItem('dye_api_key');
+    if (!apiKey) {
+      results.innerHTML = `
+        <div class="topic-card">
+          <div class="topic-name">One time setup needed</div>
+          <div class="topic-why">Paste your Anthropic API key below to activate AI topic generation. It stays private on your device only.</div>
+          <div class="field" style="margin-top:0.75rem;">
+            <input class="field-input" id="apiKeyInput" placeholder="sk-ant-..." style="font-size:12px;" />
+          </div>
+          <button class="topic-btn topic-btn-save" style="width:100%; margin-top:8px;" onclick="saveApiKey()">Save API Key</button>
+        </div>
+      `;
+      document.getElementById('inspoGoBtn').disabled = false;
+      return;
+    }
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
@@ -1627,6 +1647,17 @@ Respond ONLY in this exact JSON format with no other text:
   }
 
   document.getElementById('inspoGoBtn').disabled = false;
+}
+
+function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key || !key.startsWith('sk-ant-')) {
+    alert('Please enter a valid Anthropic API key starting with sk-ant-');
+    return;
+  }
+  localStorage.setItem('dye_api_key', key);
+  document.getElementById('inspoResults').innerHTML = '<div class="loading">API key saved! Generating your topics</div>';
+  generateInspoTopics();
 }
 
 function useTopic(name) {
